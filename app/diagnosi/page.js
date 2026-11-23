@@ -1,40 +1,42 @@
 export const dynamic = "force-dynamic";
 
-export default async function Diagnosi() {
+export default async function Diagnosi({ searchParams }) {
   const region = process.env.BLIZZARD_REGION || "eu";
-  const id = process.env.BLIZZARD_CLIENT_ID;
-  const secret = process.env.BLIZZARD_CLIENT_SECRET;
-  const slugRaw = process.env.GUILD_SLUG || "(non impostato)";
-  const out = [
-    `Client ID presente: ${!!id}`,
-    `Client Secret presente: ${!!secret}`,
-    `Regione: ${region}`,
-    `Slug gilda: ${slugRaw}`,
-  ];
-  let token = null;
-  try {
-    const r = await fetch("https://oauth.battle.net/token", {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + Buffer.from(`${id}:${secret}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "grant_type=client_credentials",
+  const ns = `profile-forever-${region}`;
+  const out = [];
+  const t = await fetch("https://oauth.battle.net/token", {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + Buffer.from(`${process.env.BLIZZARD_CLIENT_ID}:${process.env.BLIZZARD_CLIENT_SECRET}`).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+    cache: "no-store",
+  });
+  const token = (await t.json()).access_token;
+  const get = async (path) => {
+    const r = await fetch(`https://${region}.api.blizzard.com${path}?namespace=${ns}&locale=it_IT`, {
+      headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    out.push(`Token: HTTP ${r.status}`);
-    if (r.ok) token = (await r.json()).access_token;
-  } catch (e) {
-    out.push("Token: errore di rete " + e.message);
-  }
-  if (token) {
-    const slug = encodeURIComponent(decodeURIComponent(slugRaw));
-    for (const path of ["", "/roster"]) {
-      const url = `https://${region}.api.blizzard.com/data/wow/guild/${slug}${path}?namespace=profile-forever-${region}&locale=it_IT`;
-      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-      out.push(`\nGilda${path || " (info)"}: HTTP ${r.status}`);
-      out.push((await r.text()).slice(0, 500));
+    return [r.status, await r.text()];
+  };
+
+  const char = searchParams?.char;
+  if (char) {
+    const [s, body] = await get(`/profile/wow/character/${encodeURIComponent(char.toLowerCase())}`);
+    out.push(`Personaggio ${char}: HTTP ${s}`);
+    try {
+      out.push("Gilda del personaggio: " + JSON.stringify(JSON.parse(body).guild));
+    } catch {
+      out.push(body.slice(0, 300));
     }
+  }
+
+  const env = decodeURIComponent(process.env.GUILD_SLUG || "ænigmå");
+  for (const s of [env, env.normalize("NFD"), "aenigma", "ænigma"]) {
+    const [st] = await get(`/data/wow/guild/${encodeURIComponent(s)}`);
+    out.push(`Gilda "${s}": HTTP ${st}`);
   }
   return <pre style={{ whiteSpace: "pre-wrap", padding: 20 }}>{out.join("\n")}</pre>;
 }
