@@ -34,9 +34,10 @@ export default async function Diagnosi({ searchParams }) {
   }
 
   const env = decodeURIComponent(process.env.GUILD_SLUG || "ænigmå");
-  for (const s of [env, env.normalize("NFD"), "aenigma", "ænigma"]) {
-    const [st] = await get(`/data/wow/guild/${encodeURIComponent(s)}`);
+  for (const s of [env, "aenigma", "ænigma"]) {
+    const [st, body] = await get(`/data/wow/guild/${encodeURIComponent(s)}`);
     out.push(`Gilda "${s}": HTTP ${st}`);
+    if (st === 200) out.push(body.slice(0, 250));
   }
   return <pre style={{ whiteSpace: "pre-wrap", padding: 20 }}>{out.join("\n")}</pre>;
 }
