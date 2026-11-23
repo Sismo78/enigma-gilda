@@ -1,0 +1,10 @@
+{
+  "raids": [
+    { "nome": "Barrow Deeps", "giocatori": 10, "sblocco": "9 dicembre 2026", "boss": [] },
+    { "nome": "Hyjal Summit", "giocatori": 20, "sblocco": "9 dicembre 2026", "boss": [] },
+    { "nome": "Onyxia's Lair", "giocatori": 40, "sblocco": "9 dicembre 2026", "boss": [] }
+  ],
+  "traguardi": [
+    { "titolo": "Fondazione della gilda Ænigmå", "data": "novembre 2026" }
+  ]
+}
